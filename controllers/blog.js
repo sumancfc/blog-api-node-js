@@ -55,7 +55,7 @@ exports.createBlog = (req, res) => {
 
     blog.save((err, result) => {
       // console.log(result);
-      if (err) res.status(400).json({ error: errorHandler(err) });
+      if (err) res.status(400).json({ error: err });
 
       Blog.findByIdAndUpdate(
         result._id,
@@ -144,7 +144,7 @@ exports.getSingleBlog = async (req, res) => {
       )
       .exec();
 
-    if (!blog) res.status(400).json({ message: "Blog not found" });
+    if (!blog) res.status(400).json({ error: "Blog not found" });
 
     res.status(200).json(blog);
   } catch (err) {
@@ -228,7 +228,7 @@ exports.getPhoto = async (req, res) => {
 
     const blog = await Blog.findOne({ slug }).select("photo").exec();
 
-    if (!blog) res.status(400).json({ message: "Blog image not found" });
+    if (!blog) res.status(400).json({ error: "Blog image not found" });
 
     res.set("Content-Type", blog.photo.contentType);
 
@@ -254,7 +254,7 @@ exports.getRelatedBlogs = async (req, res) => {
       .select("title slug excerpt postedBy createdAt updatedAt")
       .exec();
 
-    if (!related) res.status(400).json({ message: "Blogs not found" });
+    if (!related) res.status(400).json({ error: "Blogs not found" });
 
     res.status(200).json(related);
   } catch (err) {
