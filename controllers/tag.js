@@ -8,12 +8,11 @@ const { errorHandler } = require("../middlewares/dbErrorHandler");
 exports.createTag = asyncHandler(async (req, res) => {
   const { name } = req.body;
 
-  const slug = slugify(name).toLowerCase();
-
   const tagExists = await Tag.findOne({ name });
 
-  if (tagExists) res.status(400).json({ error: "Tag already exist" });
+  if (tagExists) return res.status(400).json({ error: "Tag already exist" });
 
+  const slug = slugify(name).toLowerCase();
   const tag = await new Tag({ name, slug }).save();
 
   if (tag) res.status(200).json(tag);
@@ -34,7 +33,7 @@ exports.getSingleTag = asyncHandler(async (req, res) => {
   const tag = await Tag.findOne({ slug }).exec();
 
   if (!tag)
-    res
+    return res
       .status(400)
       .json({ error: "Tag not found or already have been deleted!" });
 
@@ -55,26 +54,29 @@ exports.getSingleTag = asyncHandler(async (req, res) => {
 
 //update tag
 exports.updateTag = asyncHandler(async (req, res) => {
+  const { id } = req.params;
   const { name } = req.body;
-  const slug = req.params.slug.toLowerCase();
-
-  const tag = await Tag.findOneAndUpdate(
-    { slug },
-    { name, slug: slugify(name).toLowerCase() },
+  const tagExists = await Tag.findById(id);
+  if (!tagExists) {
+    return res.status(400).json({ error: "Tag does not exist." });
+  }
+  const slug = slugify(name).toLowerCase();
+  const updatedTag = await Tag.findByIdAndUpdate(
+    id,
+    { name, slug },
     { new: true }
   );
-
-  res.json(tag);
+  res.json(updatedTag);
 });
 
 //delete tag
 exports.deleteTag = asyncHandler(async (req, res) => {
-  const slug = req.params.slug.toLowerCase();
+  const { id } = req.params;
 
-  const tag = await Tag.findOneAndDelete({ slug });
+  const tag = await Tag.findByIdAndRemove(id);
 
   if (!tag)
-    res
+    return res
       .status(400)
       .json({ message: "Tag not found or already have been deleted!" });
 

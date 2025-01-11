@@ -77,9 +77,9 @@ exports.updateCategory = asyncHandler(async (req, res) => {
 
 //delete category
 exports.deleteCategory = asyncHandler(async (req, res) => {
-  const slug = req.params.slug.toLowerCase();
+  const { id } = req.params;
 
-  const category = await Category.findOneAndRemove({ slug });
+  const category = await Category.findByIdAndRemove(id);
 
   if (!category)
     return res

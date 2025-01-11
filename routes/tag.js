@@ -24,7 +24,7 @@ router.post(
 );
 router.get("/tags", getAllTags);
 router.get("/tag/:slug", getSingleTag);
-router.put("/tag/:slug", requireSignin, adminMiddleware, updateTag);
-router.delete("/tag/:slug", requireSignin, adminMiddleware, deleteTag);
+router.put("/tag/:id", requireSignin, adminMiddleware, updateTag);
+router.delete("/tag/:id", requireSignin, adminMiddleware, deleteTag);
 
 module.exports = router;
