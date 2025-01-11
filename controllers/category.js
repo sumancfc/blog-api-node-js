@@ -5,14 +5,16 @@ const asyncHandler = require("express-async-handler");
 
 //create category
 exports.createCategory = asyncHandler(async (req, res) => {
-  const { name, slug } = req.body;
+  const { name } = req.body;
 
   const categoryExists = await Category.findOne({ name });
 
-  if (categoryExists)
+  if (categoryExists) {
     res.status(400).json({ error: "Category already exist." });
+    return;
+  }
 
-  // const slug = slugify(name).toLowerCase();
+  const slug = slugify(name).toLowerCase();
 
   const category = await new Category({ name, slug }).save();
 
@@ -34,7 +36,7 @@ exports.getSingleCategory = asyncHandler(async (req, res) => {
   const category = await Category.findOne({ slug }).exec();
 
   if (!category)
-    res
+    return res
       .status(400)
       .json({ error: "Category not found or already have been deleted!" });
 
@@ -48,23 +50,29 @@ exports.getSingleCategory = asyncHandler(async (req, res) => {
     )
     .exec();
 
-  if (!data) res.status(400).json({ error: "Data not found" });
+  if (!data) return res.status(400).json({ error: "Data not found" });
 
   res.status(200).json({ category, blogs: data });
 });
 
 //update category
 exports.updateCategory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
   const { name } = req.body;
-  const slug = req.params.slug.toLowerCase();
 
-  const category = await Category.findOneAndUpdate(
-    { slug },
-    { name, slug: slugify(name).toLowerCase() },
+  const categoryExists = await Category.findById(id);
+
+  if (!categoryExists) {
+    res.status(400).json({ error: "Category does not exist." });
+    return;
+  }
+  const slug = slugify(name).toLowerCase();
+  const updatedCategory = await Category.findByIdAndUpdate(
+    id,
+    { name, slug },
     { new: true }
   );
-
-  res.json(category);
+  res.json(updatedCategory);
 });
 
 //delete category
@@ -74,7 +82,7 @@ exports.deleteCategory = asyncHandler(async (req, res) => {
   const category = await Category.findOneAndRemove({ slug });
 
   if (!category)
-    res
+    return res
       .status(400)
       .json({ error: "Category not found or already have been deleted!" });
 
