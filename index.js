@@ -5,6 +5,8 @@ const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 const csrf = require("csurf");
+const swaggerUi = require("swagger-ui-express");
+const swaggerSpec = require("./swaggerOptions");
 require("dotenv").config();
 
 const csrfProtection = csrf({ cookie: true });
@@ -46,6 +48,9 @@ if (process.env.NODE_ENV === "development") {
 //   );
 //   next();
 // });
+
+// Swagger UI setup
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 //routes
 fs.readdirSync("./routes").map((r) =>

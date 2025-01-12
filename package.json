@@ -39,7 +39,9 @@
     "mongoose": "^5.13.3",
     "morgan": "^1.10.0",
     "slugify": "^1.6.0",
-    "string-strip-html": "^4.1.1"
+    "string-strip-html": "^4.1.1",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.12"

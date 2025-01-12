@@ -35,7 +35,7 @@ exports.signin = asyncHandler(async (req, res) => {
 
   if (!user)
     return res
-      .status(400)
+      .status(404)
       .json({ error: "User with that email does not exist." });
 
   //check authenticate
@@ -65,9 +65,9 @@ exports.signin = asyncHandler(async (req, res) => {
 exports.signout = async (req, res) => {
   try {
     res.clearCookie("token");
-    return res.status(200).json({ message: "Signout Success." });
+    return res.status(200).json({ message: "Signout success." });
   } catch (err) {
-    console.log(err);
+    return res.status(500).json({ error: "Signout failed." });
   }
 };
 
@@ -84,7 +84,7 @@ exports.authMiddleware = asyncHandler(async (req, res, next) => {
 
   const user = await User.findById({ _id: authUserId });
 
-  if (!user) return res.status(400).json({ error: "User not found" });
+  if (!user) return res.status(404).json({ error: "User not found" });
 
   req.profile = user;
 
@@ -97,10 +97,10 @@ exports.adminMiddleware = asyncHandler(async (req, res, next) => {
 
   const user = await User.findById({ _id: adminUserId });
 
-  if (!user) res.status(400).json({ error: "User not found" });
+  if (!user) res.status(404).json({ error: "User not found" });
 
   if (user.role !== 1)
-    return res.status(400).json({ error: "Admin resource. Access denied." });
+    return res.status(403).json({ error: "Admin resource. Access denied." });
 
   req.profile = user;
 
