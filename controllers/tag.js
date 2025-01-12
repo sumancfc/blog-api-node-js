@@ -4,40 +4,43 @@ const slugify = require("slugify");
 const asyncHandler = require("express-async-handler");
 const { errorHandler } = require("../middlewares/dbErrorHandler");
 
-//create tag
+// Create tag
 exports.createTag = asyncHandler(async (req, res) => {
   const { name } = req.body;
 
   const tagExists = await Tag.findOne({ name });
 
-  if (tagExists) return res.status(400).json({ error: "Tag already exist" });
+  if (tagExists) {
+    return res.status(400).json({ error: "Tag already exists" });
+  }
 
   const slug = slugify(name).toLowerCase();
-  const tag = await new Tag({ name, slug }).save();
+  const tag = new Tag({ name, slug });
+  await tag.save();
 
-  if (tag) res.status(200).json(tag);
-  else res.status(400).json({ error: "Failed to create tag" });
+  if (tag) {
+    return res.status(201).json(tag);
+  } else {
+    return res.status(500).json({ error: "Failed to create tag" });
+  }
 });
 
-//get all tags
+// Get all tags
 exports.getAllTags = asyncHandler(async (req, res) => {
   const tags = await Tag.find({}).sort({ createdAt: -1 }).exec();
-
   res.status(200).json(tags);
 });
 
-//get single tags
+// Get single tag
 exports.getSingleTag = asyncHandler(async (req, res) => {
   const slug = req.params.slug.toLowerCase();
 
   const tag = await Tag.findOne({ slug }).exec();
 
-  if (!tag)
-    return res
-      .status(400)
-      .json({ error: "Tag not found or already have been deleted!" });
+  if (!tag) {
+    return res.status(404).json({ error: "Tag not found or already deleted!" });
+  }
 
-  // res.status(200).json(tag);
   const data = await Blog.find({ tags: tag })
     .populate("tags", "_id name slug")
     .populate("categories", "_id name slug")
@@ -47,38 +50,43 @@ exports.getSingleTag = asyncHandler(async (req, res) => {
     )
     .exec();
 
-  if (!data) res.status(400).json({ error: "Data not found" });
+  if (!data) {
+    return res.status(404).json({ error: "Data not found" });
+  }
 
   res.status(200).json({ tag, blogs: data });
 });
 
-//update tag
+// Update tag
 exports.updateTag = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
+
   const tagExists = await Tag.findById(id);
+
   if (!tagExists) {
-    return res.status(400).json({ error: "Tag does not exist." });
+    return res.status(404).json({ error: "Tag not found" });
   }
+
   const slug = slugify(name).toLowerCase();
   const updatedTag = await Tag.findByIdAndUpdate(
     id,
     { name, slug },
     { new: true }
   );
-  res.json(updatedTag);
+
+  res.status(200).json(updatedTag);
 });
 
-//delete tag
+// Delete tag
 exports.deleteTag = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   const tag = await Tag.findByIdAndRemove(id);
 
-  if (!tag)
-    return res
-      .status(400)
-      .json({ message: "Tag not found or already have been deleted!" });
+  if (!tag) {
+    return res.status(404).json({ error: "Tag not found or already deleted!" });
+  }
 
-  res.status(200).json({ error: "Tag deleted successful" });
+  res.status(200).json({ message: "Tag deleted successfully" });
 });
