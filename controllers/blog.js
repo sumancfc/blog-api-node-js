@@ -14,66 +14,69 @@ const { buildCheckFunction } = require("express-validator");
 exports.createBlog = (req, res) => {
   let form = new formidable.IncomingForm();
   form.keepExtensions = true;
-  form.parse(req, (err, fields, files) => {
-    if (err) res.status(400).json({ error: "Image could not upload" });
-
+  form.parse(req, async (err, fields, files) => {
+    if (err) {
+      return res.status(400).json({ error: "Image could not upload" });
+    }
     const { title, body, categories, tags } = fields;
-
-    if (!title || !title.length)
-      res.status(400).json({ error: "title is required" });
-
-    if (!body || body.length < 100)
-      res.status(400).json({ error: "Content is too short" });
-
-    if (!categories || categories.length === 0)
-      res.status(400).json({ error: "At least one category is required" });
-
-    if (!tags || tags.length === 0)
-      res.status(400).json({ error: "At least one tag is required" });
-
+    if (!title || !title.length) {
+      return res.status(400).json({ error: "Title is required" });
+    }
+    if (!body || body.length < 100) {
+      return res.status(400).json({ error: "Content is too short" });
+    }
+    if (!categories || categories.length === 0) {
+      return res
+        .status(400)
+        .json({ error: "At least one category is required" });
+    }
+    if (!tags || tags.length === 0) {
+      return res.status(400).json({ error: "At least one tag is required" });
+    }
+    const slug = slugify(title).toLowerCase();
+    const slugExists = await Blog.findOne({ slug });
+    if (slugExists) {
+      return res
+        .status(400)
+        .json({ error: "Slug already exists. Please try a different title." });
+    }
     let blog = new Blog();
     blog.title = title;
-    blog.slug = slugify(title).toLowerCase();
+    blog.slug = slug;
     blog.body = body;
     blog.excerpt = smartTrim(body, 120, " ", "...");
     blog.metaTitle = `${title} | React Next Blog`;
-    blog.metaDescription = stripHtml(body.substring(0, 160));
+    blog.metaDescription = stripHtml(body.substring(0, 160)).result;
     blog.postedBy = req.user._id;
-
     const categoriesArray = categories && categories.split(",");
     const tagsArray = tags && tags.split(",");
-
+    try {
+      const categoryIds = await Category.find({
+        name: { $in: categoriesArray },
+      }).select("_id");
+      const tagIds = await Tag.find({ name: { $in: tagsArray } }).select("_id");
+      blog.categories = categoryIds.map((category) => category._id);
+      blog.tags = tagIds.map((tag) => tag._id);
+    } catch (error) {
+      return res
+        .status(400)
+        .json({ error: "Error fetching categories or tags" });
+    }
     if (files.photo) {
-      if (files.photo.size > 20000000)
-        res
+      if (files.photo.size > 2000000) {
+        // Corrected size limit to 2MB
+        return res
           .status(400)
-          .json({ error: "Image should be less then 2mb in size" });
-
+          .json({ error: "Image should be less than 2MB in size" });
+      }
       blog.photo.data = fs.readFileSync(files.photo.path);
       blog.photo.contentType = files.photo.type;
     }
-
     blog.save((err, result) => {
-      // console.log(result);
-      if (err) res.status(400).json({ error: err });
-
-      Blog.findByIdAndUpdate(
-        result._id,
-        { $push: { categories: categoriesArray } },
-        { new: true }
-      ).exec((err, result) => {
-        if (err) res.status(400).json({ error: errorHandler(err) });
-        else {
-          Blog.findByIdAndUpdate(
-            result._id,
-            { $push: { tags: tagsArray } },
-            { new: true }
-          ).exec((err, result) => {
-            if (err) res.status(400).json({ error: errorHandler(err) });
-            else res.json(result);
-          });
-        }
-      });
+      if (err) {
+        return res.status(400).json({ error: err });
+      }
+      return res.status(200).json(result);
     });
   });
 };
